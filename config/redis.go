@@ -1,8 +1,8 @@
 package config
 
 import (
-	_ "context"
-	_ "log"
+	"context"
+	"log"
 	"os"
 
 	"github.com/redis/go-redis/v9"
@@ -18,4 +18,8 @@ func ConnectRedis() {
 		DB:       0,  // Banco de dados padrão do Redis
 	})
 
+	// Testa a conexão com o Redis
+	if _, err := RedisClient.Ping(context.Background()).Result(); err != nil {
+		log.Fatal("Falha ao conectar ao Redis:", err)
+	}
 }
