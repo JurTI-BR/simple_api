@@ -15,5 +15,8 @@ func main() {
 
 	r := gin.Default()
 	routes.SetupRoutes(r)
-	r.Run(":8080")
+	err := r.Run(":8080")
+	if err != nil {
+		return
+	}
 }
