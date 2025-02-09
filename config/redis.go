@@ -15,7 +15,7 @@ func ConnectRedis() {
 	RedisClient = redis.NewClient(&redis.Options{
 		Addr:     os.Getenv("REDIS_HOST") + ":" + os.Getenv("REDIS_PORT"),
 		Password: "", // Defina aqui a senha caso necessário
-		DB:       0,  // Banco de dados padrão do Redis
+		DB:       1,  // Banco de dados padrão do Redis
 	})
 
 	// Testa a conexão com o Redis
