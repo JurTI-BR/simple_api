@@ -11,7 +11,7 @@ import (
 // ListarLivros retorna todos os livros, utilizando o cache quando disponível.
 // Caso ocorra algum erro, ele é propagado com contexto adicional.
 func ListarLivros(ctx context.Context) ([]models.Livro, error) {
-	livros, err := repository.GetLivrosFromCache(ctx)
+	livros, err := repository.GetLivrosFromCache(ctx, 1, 100, nil)
 	if err != nil {
 		return nil, fmt.Errorf("erro ao listar livros: %w", err)
 	}
