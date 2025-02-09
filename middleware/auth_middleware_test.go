@@ -13,7 +13,10 @@ import (
 
 func TestAuthMiddleware(t *testing.T) {
 	// Set JWT secret for tests.
-	os.Setenv("JWT_SECRET", "test_secret")
+	err := os.Setenv("JWT_SECRET", "test_secret")
+	if err != nil {
+		return
+	}
 
 	tests := []struct {
 		name         string
