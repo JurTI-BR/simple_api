@@ -1,2 +1,38 @@
+# Binários compilados
+*.exe
+*.dll
+*.so
+*.dylib
+*.out
+*.o
+*.a
+
+# Diretório de cache do módulo Go
+/pkg/
+
+# Arquivos gerados por `go build`
+/bin/
+/build/
+
+# Diretório de dependências (Go vendor)
+vendor/
+
+# Módulos e sumário do Go (caso use módulos, mantenha go.mod e go.sum)
+/go.work
+/go.work.sum
+
+# Arquivos de log
+*.log
+
+# Configurações e metadados da JetBrains (IDE)
+.idea/
+*.iml
+
+# Arquivos de controle de versão
+.DS_Store
+Thumbs.db
+
+# Credenciais e chaves
 .env
-.gitignore
+*.key
+*.pem
