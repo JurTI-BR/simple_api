@@ -58,7 +58,7 @@ func TestAuthMiddleware(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			// Create a Gin engine.
+			// Create a Gin enginee.
 			r := gin.New()
 
 			// Add the AuthMiddleware.
