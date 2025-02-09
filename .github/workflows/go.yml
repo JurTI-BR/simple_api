@@ -1,33 +1,68 @@
-# Workflow for building and testing a Go project
-# Documentation: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
-name: Build and Test Go Project
+name: Testes e Build
+
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
+      - develop
   pull_request:
-    branches: [ "main" ]
+    branches:
+      - main
+      - develop
 
 jobs:
-  build:
+  test-and-build:
+    name: Testes e Build
     runs-on: ubuntu-latest
-    env:
-      go_version: '1.20' # Update this value to change the Go version globally
+
+    services:
+      # Serviço Redis para testes de integração
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
-      # Step: Checkout the code
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - name: Checkout do código
+        uses: actions/checkout@v3
 
-      # Step: Set up the Go environment
-      - name: Set up Go
+      - name: Configurar Go
         uses: actions/setup-go@v4
         with:
-          go-version: ${{ env.go_version }}
+          go-version: '1.23'
+          cache: true
 
-      # Step: Build the project
-      - name: Build
-        run: go build -v ./...
+      - name: Verificar versão do Go
+        run: go version
 
-      # Step: Run tests
-      - name: Test
-        run: go test -v ./...
+      - name: Download das dependências
+        run: |
+          go mod download
+          go mod verify
+
+      - name: Executar testes unitários
+        run: go test -v -race -cover ./...
+        env:
+          REDIS_ADDR: localhost:6379
+
+      - name: Verificar cobertura de testes
+        run: |
+          go test -coverprofile=coverage.out ./...
+          go tool cover -func=coverage.out
+
+      - name: Build do projeto
+        run: |
+          GOOS=linux GOARCH=amd64 go build -v -o bin/app-linux
+          GOOS=windows GOARCH=amd64 go build -v -o bin/app.exe
+
+      - name: Arquivar binários
+        uses: actions/upload-artifact@v3
+        with:
+          name: binarios
+          path: bin/
+          retention-days: 5
