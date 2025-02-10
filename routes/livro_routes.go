@@ -10,24 +10,30 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// BookRoutes configura as rotas dos livros
 func BookRoutes(router *gin.Engine) {
+	livroService := service.NewLivroService() // Criar uma instância única do serviço
+
 	livros := router.Group("/livros")
 	livros.Use(middleware.AuthMiddleware())
 	{
-		livros.GET("", listarLivros)
-		livros.GET("/:id", buscarLivroPorID)
-		livros.POST("", criarLivro)
-		livros.PUT("/:id", atualizarLivro)
-		livros.DELETE("/:id", deletarLivro)
+		livros.GET("", func(c *gin.Context) { listarLivros(c, livroService) })
+		livros.GET("/:id", func(c *gin.Context) { buscarLivroPorID(c, livroService) })
+		livros.POST("", func(c *gin.Context) { criarLivro(c, livroService) })
+		livros.PUT("/:id", func(c *gin.Context) { atualizarLivro(c, livroService) })
+		livros.DELETE("/:id", func(c *gin.Context) { deletarLivro(c, livroService) })
 	}
 }
 
-// listarLivros lista todos os livros.
-func listarLivros(c *gin.Context) {
+func getIDFromParam(c *gin.Context) (uint, error) {
+	idParam := c.Param("id")
+	id, err := strconv.ParseUint(idParam, 10, 32)
+	return uint(id), err
+}
+
+func listarLivros(c *gin.Context, srv service.LivroService) {
 	ctx := c.Request.Context()
 
-	livros, err := service.ListarLivros(ctx)
+	livros, err := srv.ListarLivros(ctx)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Erro ao buscar livros"})
 		return
@@ -37,17 +43,16 @@ func listarLivros(c *gin.Context) {
 }
 
 // buscarLivroPorID busca um livro pelo seu ID.
-func buscarLivroPorID(c *gin.Context) {
+func buscarLivroPorID(c *gin.Context, srv service.LivroService) {
 	ctx := c.Request.Context()
 
-	idParam := c.Param("id")
-	id, err := strconv.ParseUint(idParam, 10, 32)
+	id, err := getIDFromParam(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "ID inválido"})
 		return
 	}
 
-	livro, err := service.BuscarLivroPorID(ctx, uint(id))
+	livro, err := srv.BuscarLivroPorID(ctx, id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Erro ao buscar livro"})
 		return
@@ -61,8 +66,7 @@ func buscarLivroPorID(c *gin.Context) {
 	c.JSON(http.StatusOK, livro)
 }
 
-// criarLivro cria um novo livro.
-func criarLivro(c *gin.Context) {
+func criarLivro(c *gin.Context, srv service.LivroService) {
 	ctx := c.Request.Context()
 
 	var novoLivro models.Livro
@@ -71,7 +75,7 @@ func criarLivro(c *gin.Context) {
 		return
 	}
 
-	if err := service.CriarLivro(ctx, &novoLivro); err != nil {
+	if err := srv.CriarLivro(ctx, &novoLivro); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Erro ao criar livro"})
 		return
 	}
@@ -79,12 +83,10 @@ func criarLivro(c *gin.Context) {
 	c.JSON(http.StatusCreated, novoLivro)
 }
 
-// atualizarLivro atualiza um livro existente.
-func atualizarLivro(c *gin.Context) {
+func atualizarLivro(c *gin.Context, srv service.LivroService) {
 	ctx := c.Request.Context()
 
-	idParam := c.Param("id")
-	id, err := strconv.ParseUint(idParam, 10, 32)
+	id, err := getIDFromParam(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "ID inválido"})
 		return
@@ -96,7 +98,7 @@ func atualizarLivro(c *gin.Context) {
 		return
 	}
 
-	livro, err := service.AtualizarLivro(ctx, uint(id), &livroAtualizado)
+	livro, err := srv.AtualizarLivro(ctx, id, &livroAtualizado)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Erro ao atualizar livro"})
 		return
@@ -109,18 +111,16 @@ func atualizarLivro(c *gin.Context) {
 	c.JSON(http.StatusOK, livro)
 }
 
-// deletarLivro remove um livro.
-func deletarLivro(c *gin.Context) {
+func deletarLivro(c *gin.Context, srv service.LivroService) {
 	ctx := c.Request.Context()
 
-	idParam := c.Param("id")
-	id, err := strconv.ParseUint(idParam, 10, 32)
+	id, err := getIDFromParam(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "ID inválido"})
 		return
 	}
 
-	if err := service.DeletarLivro(ctx, uint(id)); err != nil {
+	if err := srv.DeletarLivro(ctx, id); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Erro ao deletar livro"})
 		return
 	}
