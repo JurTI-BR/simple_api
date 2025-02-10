@@ -2,6 +2,7 @@ package main
 
 import (
 	"books_api/config"
+	. "books_api/middleware"
 	"books_api/repository"
 	"books_api/routes"
 	"books_api/service"
@@ -21,6 +22,8 @@ func main() {
 	config.ConnectRedis()
 
 	r := gin.Default()
+
+	r.Use(CORSMiddleware())
 
 	userRepo := repository.NewUserRepository(config.DB)
 	authService := service.NewAuthService(userRepo)
