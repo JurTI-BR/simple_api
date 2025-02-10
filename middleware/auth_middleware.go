@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -9,7 +10,11 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-// AuthMiddleware é um middleware Gin que valida o token JWT do cabeçalho "Autorização" da solicitação.
+type CustomClaims struct {
+	Sub uint `json:"sub"`
+	jwt.RegisteredClaims
+}
+
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString := c.GetHeader("Authorization")
@@ -21,14 +26,26 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		tokenString = strings.TrimPrefix(tokenString, "Bearer ")
 
-		_, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			return []byte(os.Getenv("JWT_SECRET")), nil
+		token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(token *jwt.Token) (interface{}, error) {
+
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("método de assinatura inesperado: %v", token.Header["alg"])
+			}
+			secret := os.Getenv("JWT_SECRET")
+			if secret == "" {
+				return nil, fmt.Errorf("JWT_SECRET não configurado")
+			}
+			return []byte(secret), nil
 		})
 
-		if err != nil {
+		if err != nil || !token.Valid {
 			c.JSON(http.StatusUnauthorized, gin.H{"message": "Token inválido"})
 			c.Abort()
 			return
+		}
+
+		if claims, ok := token.Claims.(*CustomClaims); ok {
+			c.Set("userID", claims.Sub)
 		}
 
 		c.Next()

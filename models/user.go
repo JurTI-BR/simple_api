@@ -16,7 +16,7 @@ type User struct {
 }
 
 func (u *User) Validate() error {
-	// Remove espaços extras no username
+
 	u.Username = strings.TrimSpace(u.Username)
 
 	if len(u.Username) < 3 || len(u.Username) > 30 {
@@ -26,7 +26,6 @@ func (u *User) Validate() error {
 		return errors.New("o nome de usuário só pode conter letras, números, pontos e traços")
 	}
 
-	// Validação da senha
 	if len(u.Password) < 8 {
 		return errors.New("a senha deve ter pelo menos 8 caracteres")
 	}
@@ -34,7 +33,6 @@ func (u *User) Validate() error {
 	return nil
 }
 
-// HashPassword criptografa a senha do usuário antes de salvar.
 func (u *User) HashPassword() error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -44,13 +42,20 @@ func (u *User) HashPassword() error {
 	return nil
 }
 
-// CheckPassword compara a senha fornecida com a armazenada.
+// CheckPassword compara a senha fornecida com o hash armazenado.
 func (u *User) CheckPassword(password string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
+	if err != nil {
+		// Apenas para debug
+		// fmt.Printf("Erro ao comparar hash: %v\n", err)
+	}
 	return err == nil
 }
 
-// Antes de salvar, garante que a senha está criptografada.
-func (u *User) BeforeSave(tx *gorm.DB) (err error) {
-	return u.HashPassword()
+func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
+	// Se a senha já tiver 60 caracteres, podemos supor que já foi hasheada.
+	if len(u.Password) != 60 {
+		return u.HashPassword()
+	}
+	return nil
 }

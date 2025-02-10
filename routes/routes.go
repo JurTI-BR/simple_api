@@ -9,6 +9,7 @@ import (
 // SetupRoutes configura todas as rotas da aplicação
 func SetupRoutes(router *gin.Engine, authService *service.AuthService) {
 	// Configura as rotas de autenticação
+
 	AuthRoutes(router, authService)
 
 	// Configura as rotas de livros
