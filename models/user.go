@@ -9,19 +9,16 @@ import (
 	"gorm.io/gorm"
 )
 
-// User representa um usuário no sistema.
 type User struct {
 	ID       uint   `json:"id" gorm:"primaryKey"`
 	Username string `json:"username" gorm:"unique;not null"`
 	Password string `json:"-" gorm:"not null"`
 }
 
-// Valida os dados antes da persistência no banco.
 func (u *User) Validate() error {
 	// Remove espaços extras no username
 	u.Username = strings.TrimSpace(u.Username)
 
-	// Validação do nome de usuário
 	if len(u.Username) < 3 || len(u.Username) > 30 {
 		return errors.New("o nome de usuário deve ter entre 3 e 30 caracteres")
 	}

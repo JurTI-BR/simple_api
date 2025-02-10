@@ -1,18 +1,17 @@
 package routes
 
 import (
-	"net/http"
-	"strconv"
-
 	"books_api/models"
 	"books_api/service"
+	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
-// SetupRoutes configura as rotas da API.
-func SetupRoutes(r *gin.Engine) {
-	livros := r.Group("/livros")
+// BookRoutes configura as rotas dos livros
+func BookRoutes(router *gin.Engine) {
+	livros := router.Group("/livros")
 	{
 		livros.GET("", listarLivros)
 		livros.GET("/:id", buscarLivroPorID)
@@ -24,7 +23,6 @@ func SetupRoutes(r *gin.Engine) {
 
 // listarLivros lista todos os livros.
 func listarLivros(c *gin.Context) {
-	// Usa o contexto da requisição para propagar timeouts e cancelamentos.
 	ctx := c.Request.Context()
 
 	livros, err := service.ListarLivros(ctx)
