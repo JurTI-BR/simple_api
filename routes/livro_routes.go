@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"books_api/middleware"
 	"books_api/models"
 	"books_api/service"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 // BookRoutes configura as rotas dos livros
 func BookRoutes(router *gin.Engine) {
 	livros := router.Group("/livros")
+	livros.Use(middleware.AuthMiddleware())
 	{
 		livros.GET("", listarLivros)
 		livros.GET("/:id", buscarLivroPorID)

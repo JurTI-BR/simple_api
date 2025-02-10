@@ -39,6 +39,9 @@ func ConnectDatabase() {
 	}
 
 	// Executa as migrações dos modelos.
+	if err = DB.AutoMigrate(&models.User{}); err != nil {
+		log.Fatalf("Erro ao migrar o modelo User: %v", err)
+	}
 	if err = DB.AutoMigrate(&models.Livro{}); err != nil {
 		log.Fatalf("Erro ao migrar o modelo Livro: %v", err)
 	}

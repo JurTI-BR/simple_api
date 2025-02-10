@@ -2,9 +2,7 @@ package main
 
 import (
 	"books_api/config"
-	"books_api/repository"
 	"books_api/routes"
-	"books_api/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -16,17 +14,7 @@ func main() {
 	config.ConnectRedis()
 
 	r := gin.Default()
-
-	// Inicializa o repositório de usuários
-	userRepository := repository.NewUserRepository(config.DB)
-
-	// Inicializa o serviço de autenticação passando o repositório
-	authService := service.NewAuthService(userRepository)
-
-	// Configura todas as rotas da aplicação
-	routes.SetupRoutes(r, authService)
-
-	// Inicia o servidor
+	routes.SetupRoutes(r)
 	err := r.Run(":8080")
 	if err != nil {
 		return
