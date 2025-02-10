@@ -128,19 +128,21 @@ func UpdateLivro(ctx context.Context, id uint, livroAtualizado *models.Livro) (*
 			return err
 		}
 
-		// Atualiza os campos necessários
 		livro.Titulo = livroAtualizado.Titulo
 		livro.Autor = livroAtualizado.Autor
+		if livroAtualizado.ImagePath != "" {
+			livro.ImagePath = livroAtualizado.ImagePath
+		}
 
 		if err := tx.Save(&livro).Error; err != nil {
 			return err
 		}
 
-		// Invalida cache após atualização
+		// Invalida cache em segundo plano
 		go func() {
 			err := invalidateCache(ctx)
 			if err != nil {
-
+				log.Printf("Erro ao invalidar cache: %v", err)
 			}
 		}()
 		return nil
@@ -159,7 +161,6 @@ func DeleteLivro(ctx context.Context, id uint) error {
 			return err
 		}
 
-		// Invalida cache após deleção
 		go func() {
 			err := invalidateCache(ctx)
 			if err != nil {

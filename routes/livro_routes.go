@@ -5,6 +5,8 @@ import (
 	"books_api/models"
 	"books_api/service"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -21,7 +23,34 @@ func BookRoutes(router *gin.Engine) {
 		livros.POST("", func(c *gin.Context) { criarLivro(c, livroService) })
 		livros.PUT("/:id", func(c *gin.Context) { atualizarLivro(c, livroService) })
 		livros.DELETE("/:id", func(c *gin.Context) { deletarLivro(c, livroService) })
+		livros.POST("/:id/upload", uploadImagemLivro)
 	}
+}
+
+func uploadImagemLivro(c *gin.Context) {
+	id := c.Param("id")
+
+	file, err := c.FormFile("image")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Arquivo inválido"})
+		return
+	}
+
+	imageDir := "uploads/"
+	if _, err := os.Stat(imageDir); os.IsNotExist(err) {
+		os.Mkdir(imageDir, os.ModePerm)
+	}
+
+	filename := id + filepath.Ext(file.Filename)
+	imagePath := filepath.Join(imageDir, filename)
+	c.SaveUploadedFile(file, imagePath)
+
+	//	if err := service.AtualizarImagemLivro(id, imagePath); err != nil {
+	//		c.JSON(http.StatusInternalServerError, gin.H{"message": "Erro ao salvar imagem"})
+	//		return
+	//	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Imagem enviada com sucesso!", "image_path": imagePath})
 }
 
 func getIDFromParam(c *gin.Context) (uint, error) {
