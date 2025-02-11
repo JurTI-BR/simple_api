@@ -4,6 +4,7 @@ import (
 	"books_api/middleware"
 	"books_api/models"
 	"books_api/service"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -12,9 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func BookRoutes(router *gin.Engine) {
-	livroService := service.NewLivroService() // Criar uma instância única do serviço
-
+func BookRoutes(router *gin.Engine, livroService service.LivroService) { // Receber o serviço corretamente
 	livros := router.Group("/livros")
 	livros.Use(middleware.AuthMiddleware())
 	{
@@ -23,12 +22,16 @@ func BookRoutes(router *gin.Engine) {
 		livros.POST("", func(c *gin.Context) { criarLivro(c, livroService) })
 		livros.PUT("/:id", func(c *gin.Context) { atualizarLivro(c, livroService) })
 		livros.DELETE("/:id", func(c *gin.Context) { deletarLivro(c, livroService) })
-		livros.POST("/:id/upload", uploadImagemLivro)
+		livros.POST("/:id/upload", func(c *gin.Context) { uploadImagemLivro(c, livroService) }) // Passando o serviço
 	}
 }
 
-func uploadImagemLivro(c *gin.Context) {
-	id := c.Param("id")
+func uploadImagemLivro(c *gin.Context, srv service.LivroService) { // Agora recebe o serviço
+	id, err := getIDFromParam(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "ID inválido"})
+		return
+	}
 
 	file, err := c.FormFile("image")
 	if err != nil {
@@ -41,16 +44,22 @@ func uploadImagemLivro(c *gin.Context) {
 		os.Mkdir(imageDir, os.ModePerm)
 	}
 
-	filename := id + filepath.Ext(file.Filename)
+	filename := fmt.Sprintf("%d%s", id, filepath.Ext(file.Filename))
 	imagePath := filepath.Join(imageDir, filename)
-	c.SaveUploadedFile(file, imagePath)
+	fullImagePath := "uploads/" + filename // Caminho salvo no banco
 
-	//	if err := service.AtualizarImagemLivro(id, imagePath); err != nil {
-	//		c.JSON(http.StatusInternalServerError, gin.H{"message": "Erro ao salvar imagem"})
-	//		return
-	//	}
+	if err := c.SaveUploadedFile(file, imagePath); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Erro ao salvar imagem"})
+		return
+	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Imagem enviada com sucesso!", "image_path": imagePath})
+	// Atualizar a imagem no banco de dados usando o serviço corretamente
+	if err := srv.AtualizarImagemLivro(id, fullImagePath); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Erro ao atualizar imagem no banco"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Imagem enviada com sucesso!", "imagePath": fullImagePath})
 }
 
 func getIDFromParam(c *gin.Context) (uint, error) {
@@ -61,11 +70,17 @@ func getIDFromParam(c *gin.Context) (uint, error) {
 
 func listarLivros(c *gin.Context, srv service.LivroService) {
 	ctx := c.Request.Context()
-
 	livros, err := srv.ListarLivros(ctx)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Erro ao buscar livros"})
 		return
+	}
+
+	// Adicionar URL completa para a imagem
+	for i := range livros {
+		if livros[i].ImagePath != "" {
+			livros[i].ImagePath = "http://localhost:8080/" + livros[i].ImagePath
+		}
 	}
 
 	c.JSON(http.StatusOK, livros)

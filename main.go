@@ -2,7 +2,6 @@ package main
 
 import (
 	"books_api/config"
-	. "books_api/middleware"
 	"books_api/repository"
 	"books_api/routes"
 	"books_api/service"
@@ -13,23 +12,43 @@ import (
 )
 
 func main() {
-
+	// Carregar variáveis de ambiente
 	if err := godotenv.Load(); err != nil {
 		log.Println("Não foi possível carregar o arquivo .env, utilizando variáveis de ambiente padrão.")
 	}
 
 	config.ConnectDatabase()
 	config.ConnectRedis()
+	// Criar instância do LivroService usando o banco PostgreSQL
+	livroService := service.NewLivroService(config.DB)
 
-	r := gin.Default()
-
-	r.Use(CORSMiddleware())
-
+	// Criar instância do UserService e AuthService
 	userRepo := repository.NewUserRepository(config.DB)
 	authService := service.NewAuthService(userRepo)
 
-	routes.SetupRoutes(r, authService)
+	// Criar router do Gin
+	r := gin.Default()
 
+	// Permitir CORS
+	r.Use(func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Authorization")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+		c.Next()
+	})
+
+	// Servir arquivos de imagem
+	r.Static("/uploads", "./uploads")
+
+	// Configurar rotas passando `authService` e `livroService`
+	routes.SetupRoutes(r, authService, livroService)
+
+	// Iniciar servidor
 	port := ":8080"
 	log.Println("Servidor rodando na porta", port)
 	if err := r.Run(port); err != nil {

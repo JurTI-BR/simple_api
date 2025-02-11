@@ -7,11 +7,9 @@ import (
 )
 
 // SetupRoutes configura todas as rotas da aplicação
-func SetupRoutes(router *gin.Engine, authService *service.AuthService) {
+func SetupRoutes(router *gin.Engine, authService *service.AuthService, livroService service.LivroService) {
 	// Configura as rotas de autenticação
-
 	AuthRoutes(router, authService)
 
-	// Configura as rotas de livros
-	BookRoutes(router)
+	BookRoutes(router, livroService)
 }

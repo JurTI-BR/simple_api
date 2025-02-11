@@ -16,6 +16,7 @@
 
 # Diretório de dependências (Go vendor)
 vendor/
+uploads
 
 # Módulos e sumário do Go (caso use módulos, mantenha go.mod e go.sum)
 /go.work

@@ -4,9 +4,8 @@ import (
 	"books_api/models"
 	"books_api/repository"
 	"context"
-	"errors"
 	"fmt"
-	"strconv"
+	"gorm.io/gorm"
 )
 
 // Interface para facilitar o mock nos testes
@@ -16,12 +15,15 @@ type LivroService interface {
 	CriarLivro(ctx context.Context, livro *models.Livro) error
 	AtualizarLivro(ctx context.Context, id uint, livroAtualizado *models.Livro) (*models.Livro, error)
 	DeletarLivro(ctx context.Context, id uint) error
+	AtualizarImagemLivro(id uint, imagePath string) error
 }
 
-type livroService struct{}
+type livroService struct {
+	db *gorm.DB
+}
 
-func NewLivroService() LivroService {
-	return &livroService{}
+func NewLivroService(db *gorm.DB) LivroService {
+	return &livroService{db: db}
 }
 
 // Implementação real do serviço
@@ -41,30 +43,17 @@ func (s *livroService) BuscarLivroPorID(ctx context.Context, id uint) (*models.L
 	return livro, nil
 }
 
-func AtualizarImagemLivro(ctx context.Context, id string, imagePath string) error {
-
-	idUint, err := strconv.ParseUint(id, 10, 32)
-	if err != nil {
-		return fmt.Errorf("ID inválido: %w", err)
+func (s *livroService) AtualizarImagemLivro(id uint, imagePath string) error {
+	livro, err := s.BuscarLivroPorID(context.Background(), id)
+	if err != nil || livro == nil {
+		return fmt.Errorf("livro não encontrado")
 	}
 
-	// Busca o livro no banco de dados
-	livro, err := repository.GetLivroByID(ctx, uint(idUint))
-	if err != nil {
-		return err
-	}
-
-	if livro == nil {
-		return errors.New("livro não encontrado")
-	}
-
-	// Atualiza o caminho da imagem
+	// Atualizar o campo ImagePath
 	livro.ImagePath = imagePath
 
-	// Salva a alteração no banco de dados
-	_, err = repository.UpdateLivro(ctx, uint(idUint), livro)
-	if err != nil {
-		return fmt.Errorf("erro ao atualizar imagem do livro: %w", err)
+	if err := s.db.Save(&livro).Error; err != nil {
+		return err
 	}
 
 	return nil
